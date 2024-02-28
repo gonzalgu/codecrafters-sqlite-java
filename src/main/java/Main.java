@@ -5,34 +5,42 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class Main {
-  public static void main(String[] args){
-    if (args.length < 2) {
-      System.out.println("Missing <database path> and <command>");
-      return;
-    }
-
-    String databaseFilePath = args[0];
-    String command = args[1];
-
-    switch (command) {
-      case ".dbinfo" -> {
-        try {
-          byte[] header = Files.readAllBytes(Path.of(databaseFilePath));
-
-          // The page size is stored at the 16th byte offset, using 2 bytes in big-endian order.
-          // '& 0xFFFF' is used to convert the signed short to an unsigned int.
-          int pageSize = ByteBuffer.wrap(header).order(ByteOrder.BIG_ENDIAN).position(16).getShort() & 0xFFFF;
-
-          // You can use print statements as follows for debugging, they'll be visible when running tests.
-          System.out.println("Logs from your program will appear here!");
-
-          // Uncomment this block to pass the first stage
-          System.out.println("database page size: " + pageSize);
-        } catch (IOException e) {
-          System.out.println("Error reading file: " + e.getMessage());
+    public static void main(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Missing <database path> and <command>");
+            return;
         }
-      }
-      default -> System.out.println("Missing or invalid command passed: " + command);
+
+        String databaseFilePath = args[0];
+        String command = args[1];
+
+        switch (command) {
+            case ".dbinfo" -> {
+                try {
+                    ByteBuffer fileContents = ByteBuffer
+                            .wrap(Files.readAllBytes(Path.of(databaseFilePath)))
+                            .order(ByteOrder.BIG_ENDIAN);
+                    // The page size is stored at the 16th byte offset, using 2 bytes in big-endian order.
+                    // '& 0xFFFF' is used to convert the signed short to an unsigned int.
+                    int pageSize = fileContents.position(16).getShort() & 0xFFFF;
+
+                    // Uncomment this block to pass the first stage
+                    System.out.printf("database page size: %d\n", pageSize);
+
+                    ByteBuffer firstPage = fileContents.position(100);
+                    int pageType = firstPage.get() & 0x00FF;
+
+                    //leaf b-tree page
+                    assert pageType == 0x0d;
+                    short freeblocks = firstPage.getShort();
+                    short cellCounts = firstPage.getShort();
+                    System.out.printf("number of tables: %d\n", cellCounts);
+
+                } catch (IOException e) {
+                    System.out.println("Error reading file: " + e.getMessage());
+                }
+            }
+            default -> System.out.println("Missing or invalid command passed: " + command);
+        }
     }
-  }
 }
