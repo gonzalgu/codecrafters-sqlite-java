@@ -5,7 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Stack;
 
 public class Main {
     public static void main(String[] args) {
@@ -60,9 +62,12 @@ public class Main {
         var pageHeader = BtreePageHeader.getHeader(firstPage);
         firstPage.position(pageHeader.getGetStartOfCellContentArea());
 
+        List<List<String>> records = new Stack<>();
         for(int i=0;i<pageHeader.cellCounts; ++i){
-            printCell(firstPage);
+            records.add(printCell(firstPage));
         }
+        Collections.reverse(records);
+        System.out.println(String.join(" ", records.stream().map(rec -> rec.get(2)).toList()));
     }
 
     private static ByteBuffer getContents(String databaseFilePath) throws IOException {
@@ -72,7 +77,7 @@ public class Main {
         return fileContents;
     }
 
-    private static void printCell(ByteBuffer cellArray){
+    private static List<String> printCell(ByteBuffer cellArray){
         //varint
         VarInt bytesOfPayload = Cell.from(cellArray);
         //varint
@@ -82,12 +87,13 @@ public class Main {
         cellArray.get(payload);
 
         ByteBuffer recordBuf = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN);
-        printRecord(recordBuf);
+
+        return printRecord(recordBuf);
         //if everything fits in the page, omit this.
         //int firstPageOverflowList = cellArray.getInt();
     }
 
-    private static void printRecord(ByteBuffer buffer){
+    private static List<String> printRecord(ByteBuffer buffer){
         //header
         var sizeOfHeader = Cell.from(buffer);
 //        System.out.printf("sizeOfHeader: %s\n", sizeOfHeader);
@@ -157,7 +163,8 @@ public class Main {
         }
         //right now only print table names.
         //3rd element of each record.
-        System.out.printf("%s ", values.get(2));
+        //System.out.printf("%s ", values.get(2));
+        return values;
         //System.out.printf("values: %s\n", String.join(", ", values));
     }
 }
