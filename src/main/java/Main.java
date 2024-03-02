@@ -23,7 +23,8 @@ public class Main {
                 try {
                     db.load();
                     var dbInfo = db.dbInfo();
-                    System.out.println(dbInfo);
+                    System.out.printf("database page size: %d\n", dbInfo.pageSize());
+                    System.out.printf("number of tables: %d\n", dbInfo.numberOfTables());
                 } catch (IOException e) {
                     System.out.println("Error reading file: " + e.getMessage());
                 }
