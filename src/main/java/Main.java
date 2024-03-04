@@ -39,18 +39,27 @@ public class Main {
                 }
             }
             default -> {
-                var queryTokens = command.split(" ");
-                if(queryTokens.length == 4){
-                    var tableName = queryTokens[3];
+                //var queryTokens = command.split(" ");
+                var query = Query.parse(command);
+                if(query.getColumns().size() == 1 && query.getColumns().get(0).equalsIgnoreCase("count(*)")){
                     try {
                         db.load();
-                        var c = db.countRows(tableName);
+                        var c = db.countRows(query.getTable());
                         System.out.println(c);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }else{
-                    throw new RuntimeException("invalid command");
+                    try {
+                        db.load();
+                        var result = db.runQuery(query);
+                        for(var res : result){
+                            System.out.println(String.join("|", res));
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
                 }
             }
         }
