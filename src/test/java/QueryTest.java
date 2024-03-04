@@ -19,4 +19,10 @@ class QueryTest {
             Assertions.assertEquals(it2.next(), it1.next());
         }
     }
+
+    @Test
+    void parseCase(){
+        var query = "select watermelon from mango";
+        var result = Query.parse(query);
+    }
 }

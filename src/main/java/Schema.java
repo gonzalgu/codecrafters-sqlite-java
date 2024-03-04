@@ -40,6 +40,7 @@ public class Schema {
     }
 
     private static List<Column> parseColumns(String tableDefinition){
+        System.out.printf("tableDefinition: %s\n", tableDefinition);
         Scanner scanner = new Scanner(tableDefinition);
         var createToken = scanner.next();
         var tableToken = scanner.next();
