@@ -54,8 +54,12 @@ public class Query {
             var columnName = index >= 0 ? col.substring(0, index) : col;
             columns.add(columnName);
         }
-        String filter = String.join(" ", partsList.subList(whereIndex + 1, partsList.size()));
-        return new Query(table, columns, filter);
+        if(whereIndex != -1){
+            String filter = String.join(" ", partsList.subList(whereIndex + 1, partsList.size()));
+            return new Query(table, columns, filter);
+        }else{
+            return new Query(table, columns, "");
+        }
     }
 
     private static int getIndexCaseInsensite(String str, List<String> partsList){
