@@ -72,6 +72,12 @@ public class DB {
         var schema = Schema.loadSchema(firstPage, query.getTable());
         var columnIndexes = getColumnIndexes(schema, query);
         var tablePage = getTablePage(query.getTable());
+
+        RowPredicate rowPredicate = null;
+        if(!query.filter.isBlank()){
+            rowPredicate = new RowPredicate(query.filter, schema);
+        }
+
         ByteBuffer pageContents = ByteBuffer.wrap(tablePage.pageContents).order(ByteOrder.BIG_ENDIAN);
         List<String[]> result = new ArrayList<>();
         for(var cellOffset : tablePage.cellPointerArray){
@@ -79,14 +85,19 @@ public class DB {
             var cell = Cell.readCell(pageContents, tablePage.btreePageHeader.pageType);
             ByteBuffer cellPayload = ByteBuffer.wrap(cell.getPayload()).order(ByteOrder.BIG_ENDIAN);
             var record = Record.readRecord(cellPayload);
-            String[] row = new String[columnIndexes.size()];
-            for(int i=0;i<columnIndexes.size();++i){
-                row[i] = String.valueOf(record.getValues().get(columnIndexes.get(i)));
+            var includeRowInResultSet = rowPredicate == null || rowPredicate.eval(record);
+            if(includeRowInResultSet){
+                String[] row = new String[columnIndexes.size()];
+                for(int i=0;i<columnIndexes.size();++i){
+                    row[i] = String.valueOf(record.getValues().get(columnIndexes.get(i)));
+                }
+                result.add(row);
             }
-            result.add(row);
         }
         return result;
     }
+
+
 
     private List<Integer> getColumnIndexes(Schema schema, Query query) {
         List<Integer> indexes = new ArrayList<>();

@@ -24,11 +24,15 @@ class QueryTest {
     void parseCase(){
         var query = "select watermelon from mango";
         var result = Query.parse(query);
+        Assertions.assertEquals("mango", result.getTable());
+        Assertions.assertEquals("watermelon", result.getColumns().get(0));
     }
 
-    @Test
-    void parseColumns(){
-        String tableDef = "CREATE TABLE banana (id integer primary key, strawberry text,vanilla text,pistachio text,coconut text,banana text)";
 
+    @Test
+    void parseQueryWithWhere(){
+        String sql = "SELECT name, color FROM apples WHERE color = 'Yellow'";
+        var result = Query.parse(sql);
+        System.out.println(result);
     }
 }
