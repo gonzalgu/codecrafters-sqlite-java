@@ -46,7 +46,26 @@ public class DB {
 
     public int countRows(String table) throws IOException {
         var tablePage = getTablePage(table);
-        return tablePage.getBtreePageHeader().cellCounts;
+        return countRows(tablePage);
+    }
+
+    public int countRows(BtreePage page){
+        if(page.btreePageHeader.pageType == 0x0d){
+            return page.btreePageHeader.cellCounts;
+        }else{
+            int count = 0;
+            ByteBuffer pageContents = ByteBuffer.wrap(page.getPageContents()).order(ByteOrder.BIG_ENDIAN);
+            for(var cellOffset : page.cellPointerArray){
+                pageContents.position(cellOffset);
+                var cell = Cell.readCell(pageContents, page.btreePageHeader.pageType);
+                var pageNumber= cell.leftChildPointer;
+                var childPage = getNthPage(pageNumber);
+                count += countRows(childPage);
+            }
+            var rightmostPage = getNthPage(page.btreePageHeader.rightMostPointer);
+            count += countRows(rightmostPage);
+            return count;
+        }
     }
 
     private BtreePage getTablePage(String table) throws IOException {
@@ -74,39 +93,61 @@ public class DB {
         var tablePage = getTablePage(query.getTable());
 
         RowPredicate rowPredicate = null;
+        List<String[]> resultSet = new ArrayList<>();
         if(!query.filter.isBlank()){
             rowPredicate = new RowPredicate(query.filter, schema);
         }
+        executeQuery(tablePage, columnIndexes, rowPredicate, resultSet);
+        return resultSet;
+    }
 
-        ByteBuffer pageContents = ByteBuffer.wrap(tablePage.pageContents).order(ByteOrder.BIG_ENDIAN);
-        List<String[]> result = new ArrayList<>();
-        for(var cellOffset : tablePage.cellPointerArray){
+    private void executeQuery(BtreePage page, List<Schema.Column> columnIndices, RowPredicate rowPredicate, List<String[]> resultSet){
+        ByteBuffer pageContents = ByteBuffer.wrap(page.pageContents).order(ByteOrder.BIG_ENDIAN);
+        for(var cellOffset : page.cellPointerArray){
             pageContents.position(cellOffset);
-            var cell = Cell.readCell(pageContents, tablePage.btreePageHeader.pageType);
-            ByteBuffer cellPayload = ByteBuffer.wrap(cell.getPayload()).order(ByteOrder.BIG_ENDIAN);
-            var record = Record.readRecord(cellPayload);
-            var includeRowInResultSet = rowPredicate == null || rowPredicate.eval(record);
-            if(includeRowInResultSet){
-                String[] row = new String[columnIndexes.size()];
-                for(int i=0;i<columnIndexes.size();++i){
-                    row[i] = String.valueOf(record.getValues().get(columnIndexes.get(i)));
+            var cell = Cell.readCell(pageContents, page.btreePageHeader.pageType);
+            // leaf table
+            if(cell.type == 0x0d){
+                ByteBuffer cellPayload = ByteBuffer.wrap(cell.getPayload()).order(ByteOrder.BIG_ENDIAN);
+                var record = Record.readRecord(cellPayload);
+                var includeRowInResultSet = rowPredicate == null || rowPredicate.eval(record);
+                if(includeRowInResultSet){
+                    String[] row = new String[columnIndices.size()];
+                    for(int i=0;i<columnIndices.size();++i){
+                        var colIndex = columnIndices.get(i).index();
+                        var colValue = columnIndices.get(i).isPK()
+                                ? cell.rowId.value()
+                                : record.getValues().get(colIndex);
+                        row[i] = String.valueOf(colValue);
+                    }
+                    resultSet.add(row);
                 }
-                result.add(row);
+            }else if(cell.type == 0x05){
+                var childPageNumber = cell.leftChildPointer;
+                BtreePage childPage = getNthPage(childPageNumber);
+                executeQuery(childPage, columnIndices, rowPredicate, resultSet);
+            }else{
+                throw new RuntimeException("not implemented for page of type: " + cell.type);
             }
         }
-        return result;
+        if(page.btreePageHeader.pageType == 0x05){
+            BtreePage rightMostChild = getNthPage(page.btreePageHeader.rightMostPointer);
+            executeQuery(rightMostChild, columnIndices, rowPredicate, resultSet);
+        }
     }
 
 
 
-    private List<Integer> getColumnIndexes(Schema schema, Query query) {
-        List<Integer> indexes = new ArrayList<>();
+
+
+    private List<Schema.Column> getColumnIndexes(Schema schema, Query query) {
+        List<Schema.Column> indexes = new ArrayList<>();
         for (String selectedColumn : query.getColumns()) {
             var col = schema.columnList.stream().filter(c -> c.name().equals(selectedColumn)).findAny();
             if (col.isEmpty()) {
                 throw new RuntimeException("column not found " + selectedColumn);
             }
-            indexes.add(col.get().index());
+            indexes.add(col.get());
         }
         return indexes;
     }

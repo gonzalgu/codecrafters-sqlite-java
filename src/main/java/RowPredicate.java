@@ -1,3 +1,5 @@
+import java.util.Objects;
+
 public class RowPredicate {
     String filter;
     Schema schema;
@@ -32,7 +34,7 @@ public class RowPredicate {
         var recordValue = record.getValues().get(this.colIndex);
         switch (op) {
             case "=":
-                return recordValue.equals(expected);
+                return Objects.equals(recordValue, expected);
             default:
                 throw new RuntimeException("evaluation not implemented for operator " + op);
         }

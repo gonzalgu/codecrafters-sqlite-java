@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class Schema {
     String tableName;
-    public record Column(String name, String type, Integer index){}
+    public record Column(String name, String type, Integer index, boolean isPK){}
 
     List<Column> columnList;
 
@@ -47,7 +47,11 @@ public class Schema {
         var result = new ArrayList<Column>();
         for(int i=0;i<columns.length;++i){
             var colDef = columns[i].trim().split(" ", 0);
-            result.add(new Column(colDef[0].trim(), colDef[1].trim(), i));
+            result.add(new Column(
+                    colDef[0].trim(),
+                    colDef[1].trim(),
+                    i,
+                    columns[i].toUpperCase().contains("INTEGER PRIMARY KEY")));
         }
         return result;
     }
