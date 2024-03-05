@@ -22,4 +22,11 @@ class SchemaTest {
         Assertions.assertEquals("apples", schema.tableName);
     }
 
+    @Test
+    void parseTableDefinition(){
+        String tableDefinition = "CREATE TABLE banana (id integer primary key, strawberry text,vanilla text,pistachio text,coconut text,banana text)";
+        var result = Schema.parseColumns(tableDefinition);
+        System.out.println(result);
+    }
+
 }

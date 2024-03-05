@@ -39,25 +39,15 @@ public class Schema {
         return new Schema(table, columns);
     }
 
-    private static List<Column> parseColumns(String tableDefinition){
-        System.out.printf("tableDefinition: %s\n", tableDefinition);
-        Scanner scanner = new Scanner(tableDefinition);
-        var createToken = scanner.next();
-        var tableToken = scanner.next();
-        var tableName = scanner.next();
-        int index = 0;
+    protected static List<Column> parseColumns(String tableDefinition){
+        var openParenIndex = tableDefinition.indexOf('(');
+        var closeParenIndex = tableDefinition.indexOf(')');
+        var columnDefList = tableDefinition.substring(openParenIndex + 1, closeParenIndex);
+        var columns = columnDefList.split(",");
         var result = new ArrayList<Column>();
-
-        //skip (
-        scanner.next();
-        String token;
-        while(!Objects.equals(token = scanner.next(), ")")){
-            var columnName = token;
-            var columnType = scanner.next();
-            var commaIndex = columnType.indexOf(",");
-            columnType = commaIndex >= 0 ? columnType.substring(0,commaIndex) : columnType;
-            result.add(new Column(columnName, columnType, index++));
-            scanner.nextLine();
+        for(int i=0;i<columns.length;++i){
+            var colDef = columns[i].trim().split(" ", 0);
+            result.add(new Column(colDef[0].trim(), colDef[1].trim(), i));
         }
         return result;
     }

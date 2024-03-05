@@ -25,4 +25,10 @@ class QueryTest {
         var query = "select watermelon from mango";
         var result = Query.parse(query);
     }
+
+    @Test
+    void parseColumns(){
+        String tableDef = "CREATE TABLE banana (id integer primary key, strawberry text,vanilla text,pistachio text,coconut text,banana text)";
+
+    }
 }
