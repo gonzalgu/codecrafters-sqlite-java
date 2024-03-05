@@ -39,7 +39,6 @@ public class Main {
                 }
             }
             default -> {
-                //var queryTokens = command.split(" ");
                 var query = Query.parse(command);
                 if(query.getColumns().size() == 1 && query.getColumns().get(0).equalsIgnoreCase("count(*)")){
                     try {
