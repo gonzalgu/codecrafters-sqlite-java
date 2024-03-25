@@ -40,4 +40,23 @@ public class RowPredicate {
         }
     }
 
+    public String getFilter() {
+        return filter;
+    }
+
+    public Schema getSchema() {
+        return schema;
+    }
+
+    public int getColIndex() {
+        return colIndex;
+    }
+
+    public Object getExpected() {
+        return expected;
+    }
+
+    public String getOp() {
+        return op;
+    }
 }

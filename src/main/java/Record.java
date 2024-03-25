@@ -122,7 +122,7 @@ public class Record {
         int colType = this.serialTypes.get(n);
         return switch (colType) {
             case 0 -> null;
-            case 3, 5 -> throw new RuntimeException("not implemented");
+            case 5 -> throw new RuntimeException("not implemented");
             case 8 -> 0;
             case 9 -> 1;
             default -> values.get(n);

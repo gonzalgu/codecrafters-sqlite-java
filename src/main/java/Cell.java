@@ -10,7 +10,7 @@ public class Cell {
     //for B-Tree Interior pages
     int leftChildPointer;
 
-
+    int firstPageOfOverflow;
 
     public Cell(byte type, VarInt bytesOfPayload, VarInt rowId, byte[] payload) {
         this.type = type;
@@ -23,6 +23,12 @@ public class Cell {
         this.type = type;
         this.leftChildPointer = leftChildPointer;
         this.rowId = rowId;
+    }
+
+    public Cell(byte type, VarInt bytesOfPayload, byte[] payload){
+        this.type = type;
+        this.bytesOfPayload = bytesOfPayload;
+        this.payload = payload;
     }
 
     public static Cell readCell(ByteBuffer buffer, byte type) {
@@ -40,10 +46,19 @@ public class Cell {
             return new Cell(type, leftChildPointer, rowId);
         }else if(type == 0x0a){
             //leaf index
-            throw new RuntimeException("cell type not implemented");
+            var bytesOfPayload = from(buffer);
+            byte[] payload = new byte[(int) bytesOfPayload.value()];
+            buffer.get(payload);
+            return new Cell(type, bytesOfPayload, payload);
         }else if(type == 0x02){
             //interior index
-            throw new RuntimeException("cell type not implemented");
+            int leftChildPointer = buffer.getInt();
+            var bytesOfPayload = from(buffer);
+            byte[] payload = new byte[(int) bytesOfPayload.value()];
+            buffer.get(payload);
+            Cell cell = new Cell(type, bytesOfPayload, payload);
+            cell.leftChildPointer = leftChildPointer;
+            return cell;
         }else{
             throw new RuntimeException("unrecognized cell type: " + type);
         }
